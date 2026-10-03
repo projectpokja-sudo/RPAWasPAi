@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-async function generateWithRetry(prompt: string, maxAttempts = 3) {
+async function generateWithRetry(prompt: string, maxAttempts = 4) {
   let lastError: any;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -124,8 +124,18 @@ async function generateWithRetry(prompt: string, maxAttempts = 3) {
         throw error;
       }
 
-      // Coba kembali jika server Gemini sedang sibuk.
-      await sleep(attempt * 2000);
+      // Gemini dapat mengembalikan 503 ketika model sedang padat.
+      // Gunakan jeda bertahap agar request berikutnya tidak langsung
+      // masuk ketika layanan masih dalam kondisi sibuk.
+      const retryDelays = [1500, 3000, 5000];
+      const delay = retryDelays[attempt - 1] ?? 5000;
+
+      console.warn(
+        `Gemini 503/unavailable. Percobaan ${attempt}/${maxAttempts}. ` +
+          `Mencoba kembali dalam ${delay} ms.`
+      );
+
+      await sleep(delay);
     }
   }
 
@@ -180,7 +190,7 @@ ${JSON.stringify(data, null, 2)}
 Susun substansi RPA berdasarkan konteks tersebut.
 `;
 
-    const response = await generateWithRetry(prompt, 3);
+    const response = await generateWithRetry(prompt, 4);
     const text = response.text;
 
     if (!text) {
@@ -207,10 +217,28 @@ Susun substansi RPA berdasarkan konteks tersebut.
   } catch (error: any) {
     console.error('Gemini RPA Error:', error);
 
+    const status = error?.status || error?.code;
+    const message = String(error?.message || 'Unknown error');
+
+    const isServiceUnavailable =
+      status === 503 ||
+      status === '503' ||
+      message.includes('503') ||
+      message.toLowerCase().includes('unavailable') ||
+      message.toLowerCase().includes('overloaded');
+
+    if (isServiceUnavailable) {
+      return res.status(503).json({
+        error: 'Layanan AI sedang padat. Silakan coba lagi beberapa saat kemudian.',
+        detail: 'Gemini tidak tersedia setelah beberapa percobaan otomatis.',
+        status: 503,
+      });
+    }
+
     return res.status(500).json({
       error: 'Gagal menghasilkan RPA dengan AI.',
-      detail: error?.message || 'Unknown error',
-      status: error?.status || error?.code || undefined,
+      detail: message,
+      status: status || undefined,
     });
   }
 }
