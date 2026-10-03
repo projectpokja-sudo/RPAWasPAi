@@ -1,0 +1,6 @@
+{
+  "name": "Generator RPA WasPAI",
+  "description": "Aplikasi Generator Rencana Pengawasan Akademik (RPA) Pengawas Pendidikan Agama Islam (PAI) Kemenag lengkap dengan 11 komponen utama, instrumen supervisi, rubrik penilaian, ekspor Word, dan cetak.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
