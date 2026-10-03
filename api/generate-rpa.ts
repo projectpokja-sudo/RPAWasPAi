@@ -48,7 +48,9 @@ Susun substansi RPA berdasarkan konteks tersebut.
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      // Gemini 3.8 Flash: model produksi terbaru yang digunakan untuk
+      // menggantikan model 2.5 Flash yang tidak tersedia pada project/API key ini.
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
