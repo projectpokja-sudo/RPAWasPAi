@@ -105,13 +105,16 @@ export const RpaForm: React.FC<RpaFormProps> = ({
     });
   };
 
-  // Generate seluruh substansi RPA menggunakan Gemini AI
-  const handleGenerateAI = async () => {
+  // Menyempurnakan RPA standar menggunakan Gemini AI.
+  // Generator standar tetap menjadi mesin utama.
+  const handleEnhanceAI = async () => {
+    if (isGeneratingAI) return;
+
     setIsGeneratingAI(true);
     setAiError(null);
 
     try {
-      const response = await fetch('/api/generate-rpa', {
+      const response = await fetch('/api/enhance-rpa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,10 +128,17 @@ export const RpaForm: React.FC<RpaFormProps> = ({
         throw new Error(
           result?.detail ||
           result?.error ||
-          'Gagal menghasilkan RPA dengan AI.'
+          'Gagal menyempurnakan RPA dengan AI.'
         );
       }
 
+      /*
+       * Hanya mengganti isi RPA setelah enhancement
+       * berhasil diterima dengan response HTTP yang sukses.
+       *
+       * Jika Gemini gagal, blok ini tidak dijalankan sehingga
+       * RPA standar yang sudah ada tetap utuh.
+       */
       onChange({
         ...doc,
         tujuan: result.tujuan ?? doc.tujuan,
@@ -145,11 +155,15 @@ export const RpaForm: React.FC<RpaFormProps> = ({
           result.rubrikPenilaian ?? doc.rubrikPenilaian,
       });
     } catch (error: any) {
-      console.error('Generate AI Error:', error);
+      console.error('Enhancement AI Error:', error);
 
+      /*
+       * Error enhancement tidak menghapus atau mengubah
+       * RPA standar. Pesan hanya ditampilkan kepada pengguna.
+       */
       setAiError(
         error?.message ||
-        'Terjadi kesalahan saat menghubungi AI.'
+        'Enhancement AI tidak tersedia saat ini. RPA standar tetap dapat digunakan.'
       );
     } finally {
       setIsGeneratingAI(false);
@@ -206,22 +220,22 @@ export const RpaForm: React.FC<RpaFormProps> = ({
                 Penyusunan Rencana Pengawasan Akademik (RPA) PAI
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                Sistem secara otomatis mengisi Tujuan, Indikator, Skenario (Awal, Inti, Akhir), Sumber Daya, Penilaian, dan RTL sesuai Aspek/Masalah & Strategi yang Anda pilih. Anda dapat menyesuaikan teks kapan saja.
+                Sistem standar secara otomatis mengisi seluruh substansi RPA sesuai Aspek/Masalah & Strategi yang Anda pilih. AI bersifat opsional untuk menyempurnakan kualitas substansi. Anda dapat menyesuaikan teks kapan saja.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleGenerateAI}
+              onClick={handleEnhanceAI}
               disabled={isGeneratingAI}
               className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-slate-950 text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors cursor-pointer"
             >
               <Sparkles className="w-4 h-4" />
               <span>
                 {isGeneratingAI
-                  ? 'AI sedang menyusun...'
-                  : 'Generate dengan AI'}
+                  ? 'AI sedang menyempurnakan...'
+                  : 'Sempurnakan dengan AI'}
               </span>
             </button>
 
